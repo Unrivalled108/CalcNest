@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 html = r'''<!DOCTYPE html>
@@ -83,6 +84,7 @@ html = r'''<!DOCTYPE html>
   footer{text-align:center;padding:25px;color:var(--muted);font-size:13px}
   .hidden{display:none}
   @media(max-width:700px){.calc-body{grid-template-columns:1fr}.hero{padding-top:48px}nav a{display:none}}
+.fraction-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 </style>
 </head>
 <body>
@@ -104,37 +106,37 @@ html = r'''<!DOCTYPE html>
   <section id="math">
     <div class="section-title"><h2>🔢 Math Calculators</h2><small>Everyday math</small></div>
     <div class="grid cards">
-      <div class="card" data-name="percentage"><div class="icon">%</div><h3>Percentage</h3><p>Find percentages, increases and decreases.</p></div>
-      <div class="card" data-name="fraction"><div class="icon">½</div><h3>Fractions</h3><p>Add, subtract, multiply and divide fractions.</p></div>
-      <div class="card" data-name="average"><div class="icon">Σ</div><h3>Average</h3><p>Calculate the mean of a set of numbers.</p></div>
-      <div class="card" data-name="basic calculator"><div class="icon">＋</div><h3>Basic Calculator</h3><p>Quick arithmetic for everyday calculations.</p></div>
+      <div class="card" data-name="percentage" onclick="openCalc('percentage')"><div class="icon">%</div><h3>Percentage</h3><p>Find percentages, increases and decreases.</p></div>
+      <div class="card" data-name="fraction" onclick="openCalc('fraction')"><div class="icon">½</div><h3>Fractions</h3><p>Add, subtract, multiply and divide fractions.</p></div>
+      <div class="card" data-name="average" onclick="openCalc('average')"><div class="icon">Σ</div><h3>Average</h3><p>Calculate the mean of a set of numbers.</p></div>
+      <div class="card" data-name="basic calculator" onclick="openCalc('basic')"><div class="icon">＋</div><h3>Basic Calculator</h3><p>Quick arithmetic for everyday calculations.</p></div>
     </div>
   </section>
 
   <section id="finance">
     <div class="section-title"><h2>💰 Financial Calculators</h2><small>Kept intentionally simple</small></div>
     <div class="grid cards">
-      <div class="card" data-name="compound interest"><div class="icon">📈</div><h3>Compound Interest</h3><p>See how money grows with compound interest.</p></div>
-      <div class="card" data-name="simple interest"><div class="icon">💵</div><h3>Simple Interest</h3><p>Calculate interest without compounding.</p></div>
-      <div class="card" data-name="loan payment"><div class="icon">🏦</div><h3>Loan Payment</h3><p>Estimate a fixed monthly loan payment.</p></div>
+      <div class="card" data-name="compound interest" onclick="openCalc('compound')"><div class="icon">📈</div><h3>Compound Interest</h3><p>See how money grows with compound interest.</p></div>
+      <div class="card" data-name="simple interest" onclick="openCalc('simple')"><div class="icon">💵</div><h3>Simple Interest</h3><p>Calculate interest without compounding.</p></div>
+      <div class="card" data-name="loan payment" onclick="openCalc('loan')"><div class="icon">🏦</div><h3>Loan Payment</h3><p>Estimate a fixed monthly loan payment.</p></div>
     </div>
   </section>
 
   <section id="scientific">
     <div class="section-title"><h2>🧪 Scientific</h2><small>Useful essentials</small></div>
     <div class="grid cards">
-      <div class="card" data-name="scientific notation"><div class="icon">10ˣ</div><h3>Scientific Notation</h3><p>Convert numbers into scientific notation.</p></div>
-      <div class="card" data-name="rounding"><div class="icon">≈</div><h3>Rounding</h3><p>Round numbers to the precision you need.</p></div>
+      <div class="card" data-name="scientific notation" onclick="openCalc('notation')"><div class="icon">10ˣ</div><h3>Scientific Notation</h3><p>Convert numbers into scientific notation.</p></div>
+      <div class="card" data-name="rounding" onclick="openCalc('rounding')"><div class="icon">≈</div><h3>Rounding</h3><p>Round numbers to the precision you need.</p></div>
     </div>
   </section>
 
-  <section class="calculator">
+  <section class="calculator" id="calculator">
     <div class="calc-head">
-      <h2>🧮 Quick Calculator</h2>
+      <h2 id="calcTitle">🧮 Quick Calculator</h2>
       <button onclick="clearCalc()">Clear</button>
     </div>
     <div class="calc-body">
-      <div>
+      <div id="fields">
         <label>Expression</label>
         <input id="expr" placeholder="Example: 25 × 4 + 10">
         <button class="primary" onclick="calculate()">Calculate</button>
@@ -146,41 +148,50 @@ html = r'''<!DOCTYPE html>
       </div>
     </div>
   </section>
+<div id="error" role="status" style="color:#b42318;margin:10px 0"></div>
 </main>
 
 <footer>CalcNest • A simple calculator concept</footer>
 
 <script>
-function filterCards(){
-  const q=document.getElementById('search').value.toLowerCase().trim();
-  document.querySelectorAll('.card').forEach(card=>{
-    card.style.display=card.dataset.name.includes(q)?'block':'none';
-  });
+let current="basic";
+const $=id=>document.getElementById(id), V=id=>Number($(id).value);
+function filterCards(){const q=$("search").value.toLowerCase().trim();document.querySelectorAll(".card").forEach(c=>c.style.display=c.dataset.name.includes(q)?"block":"none")}
+function fmt(n){return Number.isFinite(n)?Number(n.toFixed(10)).toLocaleString():"Error"}
+function result(v,m){$("answer").textContent=v;$("message").textContent=m;$("error").textContent="";$("answer").animate([{transform:"scale(.8)",opacity:.2},{transform:"scale(1)",opacity:1}],{duration:300})}
+function fail(m){$("answer").textContent="—";$("message").textContent="";$("error").textContent=m}
+function openCalc(type){
+ current=type;$("calculator").scrollIntoView({behavior:"smooth",block:"center"});
+ const titles={percentage:"% Percentage Calculator",fraction:"½ Fraction Calculator",average:"Σ Average Calculator",basic:"🧮 Quick Calculator",compound:"📈 Compound Interest Calculator",simple:"💵 Simple Interest Calculator",loan:"🏦 Loan Payment Calculator",notation:"10ˣ Scientific Notation",rounding:"≈ Rounding Calculator"};
+ $("calcTitle").textContent=titles[type];
+ const forms={
+ percentage:`<label>Percentage (%)</label><input id="p" type="number" placeholder="25"><label>Number</label><input id="n" type="number" placeholder="200"><button class="primary" onclick="runCalc()">Calculate</button>`,
+ fraction:`<label>First fraction (numerator / denominator)</label><div class="fraction-inputs"><input id="a" type="number" placeholder="1"><input id="b" type="number" placeholder="2"></div><label>Operation</label><select id="op"><option value="+">Add (+)</option><option value="-">Subtract (−)</option><option value="*">Multiply (×)</option><option value="/">Divide (÷)</option></select><label>Second fraction</label><div class="fraction-inputs"><input id="c" type="number" placeholder="1"><input id="d" type="number" placeholder="3"></div><button class="primary" onclick="runCalc()">Calculate</button>`,
+ average:`<label>Numbers separated by commas</label><input id="nums" placeholder="10, 20, 30, 40"><button class="primary" onclick="runCalc()">Calculate Average</button>`,
+ basic:`<label>Expression</label><input id="expr" placeholder="25 × 4 + 10"><button class="primary" onclick="runCalc()">Calculate</button>`,
+ compound:`<label>Principal</label><input id="principal" type="number" placeholder="10000"><label>Annual interest rate (%)</label><input id="rate" type="number" placeholder="6"><label>Years</label><input id="years" type="number" placeholder="5"><label>Compounds per year</label><input id="freq" type="number" value="12" min="1"><button class="primary" onclick="runCalc()">Calculate Growth</button>`,
+ simple:`<label>Principal</label><input id="principal" type="number" placeholder="10000"><label>Annual interest rate (%)</label><input id="rate" type="number" placeholder="6"><label>Years</label><input id="years" type="number" placeholder="5"><button class="primary" onclick="runCalc()">Calculate Interest</button>`,
+ loan:`<label>Loan amount</label><input id="principal" type="number" placeholder="500000"><label>Annual interest rate (%)</label><input id="rate" type="number" placeholder="8" min="0"><label>Term (years)</label><input id="years" type="number" placeholder="10" min="0.1"><button class="primary" onclick="runCalc()">Calculate Payment</button>`,
+ notation:`<label>Number</label><input id="num" type="number" placeholder="1250000"><button class="primary" onclick="runCalc()">Convert</button>`,
+ rounding:`<label>Number</label><input id="num" type="number" placeholder="3.14159265"><label>Decimal places (0–15)</label><input id="places" type="number" value="2" min="0" max="15"><button class="primary" onclick="runCalc()">Round</button>`
+ };
+ $("fields").innerHTML=forms[type];$("answer").textContent="—";$("message").textContent="Enter your values and calculate.";$("error").textContent="";
 }
-function calculate(){
-  const raw=document.getElementById('expr').value.trim();
-  const answer=document.getElementById('answer');
-  const message=document.getElementById('message');
-  if(!raw){answer.textContent='—';message.textContent='Enter a basic arithmetic expression.';return;}
-  try{
-    const safe=raw.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
-    if(!/^[0-9+\-*/().%\s]+$/.test(safe)) throw new Error();
-    const result=Function('"use strict";return ('+safe+')')();
-    if(!Number.isFinite(result)) throw new Error();
-    answer.textContent=Number(result.toFixed(10)).toLocaleString();
-    message.textContent='Calculated instantly in your browser.';
-    answer.animate([{transform:'scale(.8)',opacity:.2},{transform:'scale(1)',opacity:1}],{duration:350,easing:'cubic-bezier(.2,.8,.2,1)'});
-  }catch{
-    answer.textContent='Error';
-    message.textContent='Use numbers and + − × ÷ ( ).';
-  }
-}
-function clearCalc(){
-  document.getElementById('expr').value='';
-  document.getElementById('answer').textContent='—';
-  document.getElementById('message').textContent='Enter a basic arithmetic expression.';
-}
-document.getElementById('expr').addEventListener('keydown',e=>{if(e.key==='Enter')calculate()});
+function gcd(a,b){a=Math.round(a);b=Math.round(b);while(b){const t=a%b;a=b;b=t}return Math.abs(a)||1}
+function runCalc(){try{
+ if(current==="basic"){let s=$("expr").value.trim().replace(/×/g,"*").replace(/÷/g,"/").replace(/−/g,"-");if(!s)return fail("Enter an expression.");if(!/^[0-9+\-*/().%\s]+$/.test(s))throw 0;let r=Function('"use strict";return ('+s+')')();if(!Number.isFinite(r))throw 0;return result(fmt(r),"Calculated in your browser.")}
+ if(current==="percentage"){let p=V("p"),n=V("n");if(!Number.isFinite(p)||!Number.isFinite(n))return fail("Enter both values.");return result(fmt(p*n/100),`${p}% of ${n} = ${fmt(p*n/100)}`)}
+ if(current==="average"){let s=$("nums").value.trim();if(!s)return fail("Enter comma-separated numbers.");let a=s.split(",").map(x=>x.trim());if(a.some(x=>!x||!Number.isFinite(Number(x))))return fail("Enter valid numbers separated by commas.");let r=a.map(Number).reduce((x,y)=>x+y,0)/a.length;return result(fmt(r),`Mean of ${a.length} number(s).`)}
+ if(current==="fraction"){let a=V("a"),b=V("b"),c=V("c"),d=V("d"),o=$("op").value;if(![a,b,c,d].every(Number.isFinite)||b===0||d===0)return fail("Use non-zero denominators.");let n,den;if(o==="+"){n=a*d+c*b;den=b*d}else if(o==="-"){n=a*d-c*b;den=b*d}else if(o==="*"){n=a*c;den=b*d}else{if(c===0)return fail("Cannot divide by zero.");n=a*d;den=b*c}if(den<0){n=-n;den=-den}let g=gcd(n,den);n/=g;den/=g;return result(`${n}/${den}`,`Decimal: ${fmt(n/den)}`)}
+ if(current==="compound"){let p=V("principal"),r=V("rate"),t=V("years"),m=V("freq");if([p,r,t,m].some(x=>!Number.isFinite(x))||p<0||t<0||m<=0)return fail("Enter valid principal, rate, time and frequency.");let total=p*Math.pow(1+r/100/m,m*t);if(!Number.isFinite(total))return fail("Values are too large.");return result(fmt(total),`Final amount; interest earned: ${fmt(total-p)}`)}
+ if(current==="simple"){let p=V("principal"),r=V("rate"),t=V("years");if([p,r,t].some(x=>!Number.isFinite(x))||p<0||t<0)return fail("Enter valid principal, rate and time.");let i=p*r/100*t;return result(fmt(p+i),`Final amount; interest earned: ${fmt(i)}`)}
+ if(current==="loan"){let p=V("principal"),r=V("rate"),y=V("years");if([p,r,y].some(x=>!Number.isFinite(x))||p<0||r<0||y<=0)return fail("Enter a valid loan, non-negative rate and positive term.");let n=y*12,m=r/1200,pay=m===0?p/n:p*m*Math.pow(1+m,n)/(Math.pow(1+m,n)-1);return result(fmt(pay),`Estimated monthly payment for ${n} months; fees excluded.`)}
+ if(current==="notation"){let n=V("num");if(!Number.isFinite(n))return fail("Enter a valid number.");if(n===0)return result("0","Zero.");let e=Math.floor(Math.log10(Math.abs(n))),c=n/Math.pow(10,e);return result(`${fmt(c)} × 10^${e}`,"Scientific notation.")}
+ if(current==="rounding"){let n=V("num"),p=V("places");if(!Number.isFinite(n)||!Number.isInteger(p)||p<0||p>15)return fail("Choose 0–15 decimal places.");return result(Number(n.toFixed(p)).toLocaleString(),`Rounded to ${p} decimal places.`)}
+}catch(e){fail("Something went wrong. Check your inputs.")}}
+function calculate(){runCalc()}
+function clearCalc(){openCalc("basic")}
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="expr")runCalc()});
 </script>
 </body>
 </html>'''
